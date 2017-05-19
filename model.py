@@ -117,9 +117,9 @@ class BiRnnAttention(object):
                                                                       keep_prob=self.keep_prob,
                                                                       reuse=True)
                 with tf.variable_scope('Optimizer'):
-                    self.queries_states = self.queries_states[0]  # -1
-                    self.pos_outputs = self.pos_outputs[0]
-                    self.neg_outputs = self.neg_outputs[0]
+                    self.queries_states = self.queries_states  # -1
+                    self.pos_outputs = self.pos_outputs
+                    self.neg_outputs = self.neg_outputs
 
                     with tf.name_scope('length_of_tensors'):
                         len1 = tf.sqrt(tf.reduce_sum(tf.multiply(self.queries_states, self.queries_states), 1))
@@ -182,8 +182,8 @@ class BiRnnAttention(object):
                                                                   is_training=False,
                                                                   reuse=True)
                 with tf.variable_scope('cos_similarity'):
-                    self.test_queries_states = self.test_queries_states[1]
-                    self.test_outputs = self.test_outputs[1]
+                    self.test_queries_states = self.test_queries_states
+                    self.test_outputs = self.test_outputs
 
                     len1 = tf.sqrt(tf.reduce_sum(tf.multiply(self.test_queries_states, self.test_queries_states), 1))
                     len2 = tf.sqrt(tf.reduce_sum(tf.multiply(self.test_outputs, self.test_outputs), 1))
@@ -239,9 +239,9 @@ class BiRnnAttention(object):
                                                                 dtype=tf.float32)
             print("outputs:", outputs)
             outputs = tf.concat(outputs, 2)
-            states = tf.concat(states, -1)
-            print("states:", states[-1])
-            return outputs, states[-1]
+            (fw_states, bw_states) = states
+            states_h = tf.concat((fw_states[0][1], bw_states[0][1]), 1)
+            return outputs, states_h
     # query_output [?, FLAGS.query_length, 2*hidden_units]
     # ans_output [?, FLAGS.sequence_length, 2*hidden_units]
     def bi_attention(self, query_output, ans_output, query_length, ans_length, query_mask,ans_mask, is_training=True):
