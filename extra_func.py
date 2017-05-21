@@ -26,7 +26,7 @@ def reconstruct(tensor, ref, keep):
     out = tf.reshape(tensor, target_shape)
     return out
 def add_wd(wd, scope=None):
-    scope = scope or tf.get_variable_scope().naem
+    scope = scope or tf.get_variable_scope().name
     variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
     with tf.name_scope("weight_decay"):
         for var in variables:
@@ -41,18 +41,19 @@ def exp_mask(val, mask, name=None):
     print("type")
     print(val, mask)
     return tf.add(val, (1.0 - tf.cast(mask, dtype=tf.float32)) * VERY_NEGATIVE_NUMBER, name=name)
+
 # a linear function
 # map sum_i(args[i]*w[i]) , where w[i] is a variable
-def linear(args, output_size, bias, bias_start=0.0, scope=None, squeeze=True, wd=0.0, input_keep_prob=1.0, is_train=None):
+def linear(args, output_size, bias, bias_start=0.0, scope=None, squeeze=True, wd=0.0, input_keep_prob=1.0, is_train=True):
     if args is None or (nest.is_sequence(args) and not args):
         raise ValueError("args must be specified")
     if not nest.is_sequence(args):
         args = [args]
     flat_args = [flatten(arg, 1) for arg in args]
-    if input_keep_prob < 1.0:
-        assert is_train is not None
-        flat_args = [tf.cond(is_train, lambda : tf.nn.dropout(arg, input_keep_prob), lambda : arg)
-        for arg in flat_args]
+    is_train = tf.convert_to_tensor(is_train, dtype=tf.bool)
+    #if input_keep_prob is not None:
+        #assert is_train is not None
+    flat_args = [tf.cond(is_train, lambda : tf.nn.dropout(arg, input_keep_prob), lambda : arg) for arg in flat_args]
     flat_out = _linear(flat_args, output_size, bias, bias_start=bias_start, scope=scope)
     out = reconstruct(flat_out, args[0], 1)
     shape = out.get_shape().as_list()
@@ -70,7 +71,7 @@ def linear(args, output_size, bias, bias_start=0.0, scope=None, squeeze=True, wd
     print("out", out)
     return out
 
-def linear_logits(args, bias, bias_start=0.0, scope=None, mask=None, wd=0.0, input_keep_prob=1.0, is_train=None):
+def linear_logits(args, bias, bias_start=0.0, scope=None, mask=None, wd=0.0, input_keep_prob=1.0, is_train=True):
     with tf.variable_scope(scope or "linear_logits"):
         logits =linear(args, 1, bias, bias_start=bias_start, squeeze=True, scope="first",
                        wd=wd, input_keep_prob=input_keep_prob, is_train=is_train)
@@ -79,7 +80,7 @@ def linear_logits(args, bias, bias_start=0.0, scope=None, mask=None, wd=0.0, inp
             logits = exp_mask(logits, mask)
         return logits
 # compute the shared matrix
-def get_logits(args, bias, bias_start=0.0, scope=None, mask=None, wd=0.0, input_keep_prob=1.0, is_train=None, func=None):
+def get_logits(args, bias, bias_start=0.0, scope=None, mask=None, wd=0.0, input_keep_prob=1.0, is_train=True, func=None):
     #call the function of a = w*[args[0], args[1], args[0]*args[1]
     print("args:")
     assert len(args) == 2

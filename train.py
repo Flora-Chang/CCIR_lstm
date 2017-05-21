@@ -58,7 +58,7 @@ with tf.Session(config = config) as sess:
                                                              FLAGS.embedding_dim,
                                                              timestamp)
     models = []
-    model_num = 3
+    model_num = 1
     for i in range(model_num):
         model = BiRnnAttention(sess=sess,
                                q_hidden_dim=FLAGS.query_hidden_unites,
@@ -357,7 +357,7 @@ with tf.Session(config = config) as sess:
 
     with open(log_dir + "/dcg_k_score.txt", "w") as f:
         print("On train set:\n")
-        dcg_3, dcg_5, dcg_full = test(sess, model, train_set, number=100)
+        dcg_3, dcg_5, dcg_full = test(sess, model, train_set)
 
         print("On validation set:\n")
         v_dcg_3, v_dcg_5, v_dcg_full = test(sess, model, dev_set)
